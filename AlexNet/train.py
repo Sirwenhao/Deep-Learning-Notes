@@ -1,5 +1,7 @@
+import matplotlib
 import torch
 import torch.nn as nn
+import torchvision
 from torchvision import transforms, datasets, utils
 import matplotlib.pyplot as plt
 import numpy as np
@@ -8,6 +10,9 @@ from model import AlexNet
 import os
 import json
 import time
+from torch.utils.tensorboard import SummaryWriter
+
+writer = SummaryWriter('runs/AlexNetTrain')
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(device)
@@ -25,8 +30,8 @@ data_root = os.path.abspath(os.getcwd()) #获取当前train.py文件所在的位
 print(os.getcwd())
 #data_root = os.path.abspath(os.path.join(os.getcwd(), "../..")) #get data root path
 # os.getcwd()表示获取当前文件所在的目录，“../..”是指获取上上层文件夹的目录，”..“代表上一层，四个点就代表上上层
-image_path = data_root + "\\data_set\\flower_data\\" #flower dataset path
-# image_path = './data_set/flower_data/'
+#image_path = data_root + "\\data_set\\flower_data\\" #flower dataset path
+image_path = '../Dataset/flower_data_set/flower_data/'
 print(image_path)
 train_dataset = datasets.ImageFolder(root = image_path + "train",
                                      transform=data_transform["train"])
@@ -43,6 +48,20 @@ batch_size = 32
 train_loader = torch.utils.data.DataLoader(train_dataset,
                                            batch_size = batch_size, shuffle = True,
                                            num_workers = 0)
+
+#get some random training images
+dataiter = iter(train_loader)
+images, labels = dataiter.next()
+
+#create grid of images
+img_grid = torchvision.utils.make_grid(images)
+print(type(img_grid))
+
+# #show images
+# plt.imshow(img_grid, one_channel = True)
+
+#write to tensorboard
+writer.add_image('flower_images', img_grid)
 
 validate_dataset = datasets.ImageFolder(root = image_path + "val",
                                         transform = data_transform["val"])
@@ -64,9 +83,12 @@ test_image, test_label = test_data_iter.next()
 # imshow(utils.make_grid(test_image))
 
 
-net = AlexNet(num_classes = 5, init_weights = True)
+net = AlexNet(num_classes = 5, init_weights = True).to(device)
 
-net.to(device)
+init_img = torch.zeros((1, 3, 224, 224), device=device)
+writer.add_graph(net, init_img)
+
+
 loss_function = nn.CrossEntropyLoss()
 #pata = list(net.parameters())
 optimizer = optim.Adam(net.parameters(), lr = 0.0002)
@@ -93,7 +115,6 @@ for epoch in range(10):
         a = "*" * int(rate * 50)
         b = "*" * int((1 - rate) * 50)
         print("\rtrain loss: {:^3.0f}%[{}->{}]{:.3f}".format(int(rate * 100), a, b, loss), end = "")
-    print()
     print(time.perf_counter()-t1)
 
     #validate
@@ -112,6 +133,11 @@ for epoch in range(10):
         print('[epoch %d] train_loss: %.3f test_accuracy: %.3f'%
               (epoch + 1,running_loss / step, val_accurate))
 
+    #add loss, acc and lr into tensorboard
+    tags = ["running_loss", "val_accurate", "learning_rate"]
+    writer.add_scalar(tags[0], running_loss / step, epoch)
+    writer.add_scalar(tags[1],  val_accurate, epoch)
+    writer.add_scalar(tags[2], optimizer.param_groups[0]["lr"], epoch)
+
+
 print('Finished Training')
-
-
