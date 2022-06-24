@@ -12,11 +12,11 @@ class AlexNet(nn.Module):
             nn.MaxPool2d(kernel_size = 3, stride = 2),
             nn.Conv2d(48, 128, kernel_size = 5, padding = 2),
             nn.ReLU(inplace = True),
-            nn.MaxPool2d(kernel_size = 3, stride = 2)
+            nn.MaxPool2d(kernel_size = 3, stride = 2),
             nn.Conv2d(128, 192, kernel_size = 3, padding = 1),
             nn.ReLU(inplace = True),
             nn.Conv2d(192, 192, kernel_size = 3, padding = 1),
-            nn.ReLU(inplace = True)
+            nn.ReLU(inplace = True),
             nn.Conv2d(192, 128, kernel_size = 3, padding = 1),
             nn.ReLU(inplace = True),
             nn.MaxPool2d(kernel_size = 3, stride = 2),
