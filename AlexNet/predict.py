@@ -43,4 +43,3 @@ with torch.no_grad():
     predict_cla = torch.argmax(predict).numpy()
 print(class_indict[str(predict_cla)], predict[predict_cla].item())
 plt.show()
-
