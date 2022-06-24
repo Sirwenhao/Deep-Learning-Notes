@@ -14,7 +14,7 @@ data_transform = transforms.Compose(
 )
 
 #load image
-img = Image.open("./tulip.jpg")
+img = Image.open("AlexNet\\tulip.jpg")
 plt.imshow(img)
 # [N, C, H, W]
 img = data_transform(img)
