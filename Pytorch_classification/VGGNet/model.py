@@ -33,13 +33,13 @@ class VGG(nn.Module):
         # N x 3 x 224 x 224
         x = self.features(x)
         # N x 512 x 7 x 7
-        x = torch.flattern(x, start_dim=1)
+        x = torch.flatten(x, start_dim=1)
         # N x 512*7*7
         x = self.classifier(x)
         return x
 
     def _initialize_weights(self):
-        for m in self.module():
+        for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 # nn.init.kaiming_normal_(m.weights, mode='fan_out', nonlinearity='relu')
                 nn.init.xavier_uniform_(m.weight)

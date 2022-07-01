@@ -26,7 +26,7 @@ def main():
                                 transforms.ToTensor(),
                                 transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])}
     # 此处文件路径根据自己的情况给出即可
-    data_root = ''
+    data_root = 'D:\Learning/'
     image_path = data_root + "data_set/flower_data/" 
 
     train_dataset = datasets.ImageFolder(root = image_path + "train",
@@ -37,7 +37,7 @@ def main():
     flower_list = train_dataset.class_to_idx
     cla_dict = dict((val, key) for key, val in flower_list.items())
     # write dict into json file
-    json_str = json.dumps(cla_dict, ident=4)
+    json_str = json.dumps(cla_dict, indent=4)
     with open('class_indices.json', 'w') as json_file:
         json_file.write(json_str)
 
@@ -45,17 +45,20 @@ def main():
     nw = min([os.cpu_count(), batch_size if batch_size > 1 else 0, 8]) # number of num_workers
     print('Using {} dataloader workers every process'.format(nw))
 
-    train_loader = torch.utils.data.Dataloader(train_dataset,
+    train_loader = torch.utils.data.DataLoader(train_dataset,
                                             batch_size=batch_size, shuffle=True,num_workers=nw)
 
+    validate_dataset = datasets.ImageFolder(root=os.path.join(image_path, "val"),
+                                           transform=data_transform["val"])                                       
+
     val_num = len(validate_dataset)
-    validate_loader = datasets.ImageFolder(root=os.path.join(image_path, "val"),
-                                            batch_size=batch_size, shuffle=True, num_workers=nw)
+    validate_loader = torch.utils.data.DataLoader(validate_dataset,
+                                            batch_size=batch_size, shuffle=False, num_workers=nw)
 
     print("using {} images for training, {} images for validation.".format(train_num, val_num))
 
-    test_data_iter = iter(validate_loader)
-    test_image, test_label = test_data_iter.next()
+    # test_data_iter = iter(validate_loader)
+    # test_image, test_label = test_data_iter.next()
 
     model_name = "vgg16"
     net = vgg(model_name=model_name, num_classes=5, init_weights=True)
