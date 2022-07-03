@@ -1,11 +1,11 @@
 ## GoogLeNet
 
-GoogLeNet与2014年有Google团队提出《Going deeper with convolutions》，斩获同年ImageNet竞赛分类赛道（Classification Task）中的第二名，该网络与以往的卷积神经网络相比有以下四个亮点：
+GoogLeNet与2014年有Google团队提出《Going deeper with convolutions》，斩获同年ImageNet竞赛分类赛道（Classification Task）中的第二名，该网络与以往的卷积神经网络相比有以下四个亮点（参考WZMIAOMIAO教程）：
 
 - 引入了inception结构（旨在融合不同尺度的特征信息）
 - 使用$1\times1$卷积进行降维以及映射处理
 - 添加了两个辅助分类器帮助训练（相比于AlexNet和VGG都只有一个输出层，GoogLeNet有三个输出层）
-- 丢弃全连接层（也没有完全放弃全连接层），使用平均池化（大大减少了模型参数）
+- 丢弃全连接层，使用平均池化（大大减少了模型参数）
 
 ### GoogLeNet结构图
 
