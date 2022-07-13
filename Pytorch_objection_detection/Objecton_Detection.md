@@ -79,4 +79,10 @@ Fast R-CNN算法流程可大致分为三个步骤：
 
 ![image-20220710164249571](https://gitee.com/sirwenhao/images/raw/master/image-20220710164249571.png)
 
-![image-20220710164350137](https://gitee.com/sirwenhao/images/raw/master/image-20220710164350137.png)
+![image-20220710164758879](https://gitee.com/sirwenhao/images/raw/master/image-20220710164758879.png)
+
+有关于损失函数：
+
+- 其中$p$是分类器预测的softmax概率分布$p=(p_0,...,p_k)$，其中$p_0$是指分类器预测结果为背景的概率。根据softmax函数的特点，所有这21个概率之和为1.
+- $u$对应目标的真是类别标签，分类损失计算的是预测类别和真实类别的偏差
+- $t^u$对应的边界框回归器预测的对应的类别$u$的回归参数$(t_x^u,t_y^u,t_w^u,t_h^u)$
