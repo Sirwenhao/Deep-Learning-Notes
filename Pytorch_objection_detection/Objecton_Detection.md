@@ -60,7 +60,7 @@ Fast R-CNN算法流程可大致分为三个步骤：
 
 具体结构图如下：
 
-![image-20220709145317443](https://gitee.com/sirwenhao/images/raw/master/image-20220709145317443.png)
+![image-20220714113244188](https://gitee.com/sirwenhao/images/raw/master/image-20220714113244188.png)
 
 有关于Fast R-CNN的一些重要知识点：
 
