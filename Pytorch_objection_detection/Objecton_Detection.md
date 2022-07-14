@@ -15,7 +15,9 @@
 
 ### R-CNN
 
-对应论文：《*Rich feature hierarchies for accurate object detection and semantic segmentation*》（https://arxiv.org/pdf/1311.2524.pdf）。根据原论文RCNN的算法流程可以分为四步：
+> 对应论文：《*Rich feature hierarchies for accurate object detection and semantic segmentation*》(https://arxiv.org/pdf/1311.2524.pdf)
+
+根据原论文RCNN的算法流程可以分为四步：
 
 1. 每张图像上生成1K~2K个候选区域（使用Selective Search方法）
 2. 对于每个候选区域使用深度网络提取特征
@@ -135,3 +137,7 @@ Faster R-CNN的训练：可以直接采用RPN loss+Fast R-CNN loss的联合训�
 2. 冻结RPN网络的卷积层以及全连接层参数，再利用ImageNet与训练分类模型初始化前置卷积层网络参数，并利用Fast R-CNN生成的目标建议框去训练Fast R-CNN网络参数
 3. 冻结Fast R-CNN训练好的前置卷积层的参数，微调RPN网络的卷积层和全连接层的参数
 4. 冻结前置卷积网络层的参数，微调Fast R-CNN网络的全连接层参数。最后RPN和Fast R-CNN共享前置卷积层参数，构成一个统一的网络。
+
+Faster R-CNN结构
+
+![image-20220714173743153](https://gitee.com/sirwenhao/images/raw/master/image-20220714173743153.png)
