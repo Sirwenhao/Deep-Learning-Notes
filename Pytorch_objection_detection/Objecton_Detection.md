@@ -50,7 +50,9 @@ R-CNN存在的问题：
 
 ### Fast R-CNN
 
-对应论文《Fast R-CNN》(https://www.cv-foundation.org/openaccess/content_iccv_2015/papers/Girshick_Fast_R-CNN_ICCV_2015_paper.pdf)，Fast R-CNN与R-CNN同样都使用VGG16作为CNN backbone。较R-CNN，训练时间快9倍，测试推理时间快213倍，准确率从62%提升至66%（在Pascal VOC数据集上）
+Fast R-CNN与R-CNN同样都使用VGG16作为CNN backbone。较R-CNN，训练时间快9倍，测试推理时间快213倍，准确率从62%提升至66%（在Pascal VOC数据集上）
+
+> 对应论文为：《Fast R-CNN》(https://www.cv-foundation.org/openaccess/content_iccv_2015/papers/Girshick_Fast_R-CNN_ICCV_2015_paper.pdf)
 
 Fast R-CNN算法流程可大致分为三个步骤：
 
@@ -86,7 +88,50 @@ Fast R-CNN结构
 
 ![image-20220714112832570](https://gitee.com/sirwenhao/images/raw/master/image-20220714112832570.png)
 
+### Fastr R-CNN
 
+Faster R-CNN基于Fast R-CNN提出，其骨干网络仍然是基于VGG16的，无论是在推理速度还是准确率方面都有了显著性提升。并且，获得了2015年的ILSVRC以及COCO竞赛中的多项第一名。
 
+> 对应论文为：Ren, Shaoqing, et al. “Faster R-CNN: Towards real-time object detection with region proposal networks.” Advances in Neural Information Processing Systems. 2015.（https://arxiv.org/pdf/1506.01497.pdf）
 
+Faster R-CNN的算法流程具体也可以分为三个步骤：
 
+- 将图像输入网络中获取相应的特征图
+- 使用RPN网络结构生成候选框，将RPN结构生成的候选框投影到特征图上获取相应的特征矩阵
+- 将每个特征矩阵通过ROI pooling层缩放到$7\times7$大小的特征图，接着将特征图展平并通过一系列全连接层得到预测结果
+
+具体结构图如下：
+
+![在这里插入图片描述](https://gitee.com/sirwenhao/images/raw/master/20191105195816143.png)
+
+简单来说，可以将其理解为`RPN+Fast R-CNN`，其核心部分的RPN结构替代了原有的SS算法。在本篇论文中，目标检测的四个基本步骤（候选区域生成、特征提取、分类、位置精修）被统一到一个深度网络框架之中。
+
+![image-20220714155639579](https://gitee.com/sirwenhao/images/raw/master/image-20220714155639579.png)
+
+关于上图的解释：
+
+- 2K scores是针对每一个anchor box生成两个概率值，当前anchor为前景的概率和当前anchor为背景的概率
+- 4K coordinates表示对于每一个anchor都会生成四个边界框回归参数，每四个一组
+- 此处的256-d是根据具体使用的网络backbone而言的，其中的256是其对应的channel
+- 特征图到原图的映射：特征图上的每一个pixel都是由原图经过一系列卷积操作所得，根据特征图与原图的大小比例可以找出特征图上一个pixel在原图上所对应的pixel的位置
+- Faster R-CNN中对应的anchor总共有9种类型，涵盖三种面积尺度：$\{128^2,256^2,512^2\}$，三种比列：$\{1:1, 1:2, 2:1\}$，即特征图上的每个位置对应到原图上都有9个与之对应的anchor
+- 对于一个$1000\times6000\times3$的图像，大约有$60\times40\times9(20K)$个anchor，忽略掉跨越边界的anchor，还剩下约$6K$个anchor。然后使用RPN生成的候选框回归参数，对anchor的位置进行调整生成候选框，但是候选框之间存在重叠部分。因此，进一步采用非极大值抑制筛选掉存在大量重叠的候选框，这一步的非极大值抑制在原论文中有两种设定方式。通过上述操作，最终每张图片可以得到大约2k个候选框
+- 对于每一张图片，随机采样256个anchor进行计算。采样的原则是正负样本比例控制在1:1，如果正样本比例不足$\frac{1}{2}$则使用负样本进行填充
+  - 关于正负样本的定义：
+    - 正样本：(1)anchor/anshors with the heighest Intersection-over-Union(IoU) overlap with a ground-truth box，(2)an anchor that has an IoU overlap heigher than 0.7 with any ground-truth box.
+    - 负样本：We assign a negative label to a non-positive anchor if its IoU ratio is lower than 0.3 for all ground-truth boxes.
+
+有关于损失函数：$L(\{p_i\},\{t_i\})=\frac{1}{N_{cls}}\sum_iL_{cls}(p_i,p_i^*)+\lambda\frac{1}{N_{reg}}\sum_ip_i^*L_{reg}(t_i,t_i^*)$
+
+$i$表示mini-batch中的第i个anchor，$p_i$表示第$i$个anchor预测为真实标签值的概率，当第$i$个anchor为前景时，$p_i^*$为1反之为0。$t_i$表示预测的bounding box的坐标，$t_i^*$为第$i$个ground-truth box对应的边界回归参数，$N_{cls}$表示一个mini-batch中所有样本数量256，$N_{reg}$表示anchor位置的个数（不是anchor的个数，一个位置对应多个anchor）约为2400。$\lambda$是平衡参数，用于平衡分类损失和边界框回归损失。
+
+Faster R-CNN的训练：可以直接采用RPN loss+Fast R-CNN loss的联合训练方法
+
+![image-20220714172249385](https://gitee.com/sirwenhao/images/raw/master/image-20220714172249385.png)
+
+原论文中使用的是分别训练RPN loss和Fast R-CNN loss的方法：
+
+1. 利用ImageNet预训练分类模型初始化前置卷积层参数，并开始单独训练RPN网络参数
+2. 冻结RPN网络的卷积层以及全连接层参数，再利用ImageNet与训练分类模型初始化前置卷积层网络参数，并利用Fast R-CNN生成的目标建议框去训练Fast R-CNN网络参数
+3. 冻结Fast R-CNN训练好的前置卷积层的参数，微调RPN网络的卷积层和全连接层的参数
+4. 冻结前置卷积网络层的参数，微调Fast R-CNN网络的全连接层参数。最后RPN和Fast R-CNN共享前置卷积层参数，构成一个统一的网络。
