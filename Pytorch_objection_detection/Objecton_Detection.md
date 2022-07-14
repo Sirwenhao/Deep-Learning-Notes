@@ -34,14 +34,11 @@
 
 4. 有关于非极大值抑制：使用非极大值抑制剔除重叠建议框，一个重要的概念：IOU(Intersection over Union)，具体计算为：$IOU=(A\cup B)/(A\cap B)$。此处非极大值抑制是对于矩阵$2000\times20$的每一列进行处理的。
 
-   ![image-20220708205648099](https://gitee.com/sirwenhao/images/raw/master/image-20220708205648099.png)
+   ![image-20220714112649962](https://gitee.com/sirwenhao/images/raw/master/image-20220714112649962.png)
 
 5. 使用回归器精细修正候选框位置：对NMS处理后的候选框进行进一步筛选。用20个回归器对上述20个类别中剩余的建议框进行回归操作，最终得到每个类别的修正后的得分最高的bounding box。
 
-6. <center> R-CNN框架 </center>
-   <center>Region proposal(Selective Search)</center>
-   <center>Feature Extraction(CNN)</center>
-   <center>Classfication(SVM)  and   Bounding-box regression(regression)</center>
+6. ![image-20220714112736866](https://gitee.com/sirwenhao/images/raw/master/image-20220714112736866.png)
 
 R-CNN存在的问题：
 
@@ -73,8 +70,6 @@ Fast R-CNN算法流程可大致分为三个步骤：
 - Fast R-CNN中选取正负样本的标准：GT bbox与proposal bbox的IOU大于等于0.5即被选取作为正样本，IOU在$[0.1,0.5)$被选取作为负样本
 - 训练样本的候选框通过RoI Pooling Layer缩放到统一的尺寸。对于所有的候选区，将其划分为$7\times7$大小的区域，然后对每个区域执行最大池化下采样，从而得到大小为$7\times7$大小的特征矩阵
 
-
-
 ![image-20220714104136684](https://gitee.com/sirwenhao/images/raw/master/image-20220714104136684.png)
 
 ![image-20220714104335248](https://gitee.com/sirwenhao/images/raw/master/image-20220714104335248.png)
@@ -87,13 +82,11 @@ Fast R-CNN算法流程可大致分为三个步骤：
 - $v$对应真实目标边界框的回归参数$(v_x,x_y,v_w,v_h)$
 - $[u\geqslant1]$表示艾弗森括号，具体理解为：$u\ge1$时整个式子的值为1，反之为0。在此问题中，$u$表示的是目标的真实标签值，若$u\geq1$则表示候选区域确实属于所需检测的某一个类别，即对应于正样本，因此才会有边界框损失函数。反之，对应于负样本，就不需要计算边界框损失函数了，因此此时的$[u\geq1]=0$。
 
-### Fast R-CNN结构
+Fast R-CNN结构
 
-<center>Region proposal(Selective Search)
+![image-20220714112832570](https://gitee.com/sirwenhao/images/raw/master/image-20220714112832570.png)
 
-<center>Feature extraction
 
-<center>Classification
 
-<center>Bounding-box regression (CNN)
+
 
