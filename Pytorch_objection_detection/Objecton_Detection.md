@@ -89,8 +89,11 @@ Fast R-CNN算法流程可大致分为三个步骤：
 
 ### Fast R-CNN结构
 
-<center>Region proposal(Selective Search)<\center>
+<center>Region proposal(Selective Search)
+
 <center>Feature extraction
+
 <center>Classification
+
 <center>Bounding-box regression (CNN)
 
