@@ -73,16 +73,24 @@ Fast R-CNN算法流程可大致分为三个步骤：
 - Fast R-CNN中选取正负样本的标准：GT bbox与proposal bbox的IOU大于等于0.5即被选取作为正样本，IOU在$[0.1,0.5)$被选取作为负样本
 - 训练样本的候选框通过RoI Pooling Layer缩放到统一的尺寸。对于所有的候选区，将其划分为$7\times7$大小的区域，然后对每个区域执行最大池化下采样，从而得到大小为$7\times7$大小的特征矩阵
 
-![image-20220710162931160](https://gitee.com/sirwenhao/images/raw/master/image-20220710162931160.png)
 
-![image-20220710164217840](https://gitee.com/sirwenhao/images/raw/master/image-20220710164217840.png)
 
-![image-20220710164249571](https://gitee.com/sirwenhao/images/raw/master/image-20220710164249571.png)
+![image-20220714104136684](https://gitee.com/sirwenhao/images/raw/master/image-20220714104136684.png)
 
-![image-20220710164758879](https://gitee.com/sirwenhao/images/raw/master/image-20220710164758879.png)
+![image-20220714104335248](https://gitee.com/sirwenhao/images/raw/master/image-20220714104335248.png)
 
 有关于损失函数：
 
 - 其中$p$是分类器预测的softmax概率分布$p=(p_0,...,p_k)$，其中$p_0$是指分类器预测结果为背景的概率。根据softmax函数的特点，所有这21个概率之和为1.
 - $u$对应目标的真是类别标签，分类损失计算的是预测类别和真实类别的偏差
 - $t^u$对应的边界框回归器预测的对应的类别$u$的回归参数$(t_x^u,t_y^u,t_w^u,t_h^u)$
+- $v$对应真实目标边界框的回归参数$(v_x,x_y,v_w,v_h)$
+- $[u\geqslant1]$表示艾弗森括号，具体理解为：$u\ge1$时整个式子的值为1，反之为0。在此问题中，$u$表示的是目标的真实标签值，若$u\geq1$则表示候选区域确实属于所需检测的某一个类别，即对应于正样本，因此才会有边界框损失函数。反之，对应于负样本，就不需要计算边界框损失函数了，因此此时的$[u\geq1]=0$。
+
+### Fast R-CNN结构
+
+<center>Region proposal(Selective Search)<\center>
+<center>Feature extraction
+<center>Classification
+<center>Bounding-box regression (CNN)
+
