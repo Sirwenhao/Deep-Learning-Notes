@@ -94,5 +94,26 @@ class ResNet(nn.Module):
         self.groups = groups
         self.width_per_group = width_per_group
 
-        
+        self.conv1 = nn.Conv2d(3, self.in_channel, kernel_size=7, stride=2,
+                               padding=3, bias=False)
+        self.bn1 = nn.BatchNorm2d(self.in_channel)
+        self.relu = nn.ReLU(inplace=True)
+        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+        self.layer1 = self._make_layer(block, 64, blocks_num[0])
+        self.layer2 = self._make_layer(block, 128, blocks_num[1], stride=2)
+        self.layer3 = self._make_layer(block, 256, blocks_num[2], stride=2)
+        self.layer4 = self._make_layer(block, 512, blocks_num[3], stride=2)
+        if self.include_top:
+            self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+            self.fc = nn.Linear(512 * block.expansion, num_classes)
+
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal(m.weight, mode='fan_out', nonlinearity='relu')
+
+    def _make_layer(self, block, channel, block_num, stride=1):
+        downsample = None
+
+
+
 
