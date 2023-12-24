@@ -3,6 +3,9 @@
 import torch
 import torch.nn as nn
 
+# 首先定义基本的块结构，通过不同的参数传递实现不同大小配置的块
+# 此处定义的块结构是针对resnet18和resnet34这两种结构的，expansion参数表述主分支结构上卷积通道数的变化
+# 在18和34两种结构中，每一个基础块结构中，主分支上的通道数事不发生变化的，故expansion=1
 class BasicBlock(nn.Module):
     expansion = 1
 
@@ -113,6 +116,47 @@ class ResNet(nn.Module):
 
     def _make_layer(self, block, channel, block_num, stride=1):
         downsample = None
+        if stride  != 1 or self.in_channel != channel * block.expansion:
+            downsample = nn.Sequential(
+                nn.Conv2d(self.in_channel, channel*block.expansion, kernel_size=1, stride=stride, bias=False),
+                nn.BatchNorm2d(channel * block.expansion))
+        layers = []
+        layers.append(block(self.in_channel,
+                            channel,
+                            downsample = downsample,
+                            stride = stride,
+                            groups = self.groups,
+                            width_per_group = self.width_per_group))
+        self.in_channel = channel * block.expansion
+
+        for _ in range(1, block_num):
+            layers.append(block(self.in_channel,
+                                channel,
+                                groups=self.groups,
+                                width_per_group=self.width_per_group))
+                
+        return nn.Sequential(*layers)
+    
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+        x = self.maxpool(x)
+
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+
+        if self.include_top:
+            x = self.avgpool(x)
+            x = torch.flatten(x, 1)
+            x = self.fc(x)
+        
+        return x
+
+        
+    
 
 
 
