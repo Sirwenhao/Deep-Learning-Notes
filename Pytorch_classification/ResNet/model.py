@@ -89,7 +89,7 @@ class ResNet(nn.Module):
                 num_classes=1000,
                 include_top=True,
                 groups=1,
-                wodth_per_group=64):
+                width_per_group=64):
         super(ResNet, self).__init__()
         self.include_top = include_top
         self.in_channel = 64
@@ -156,7 +156,33 @@ class ResNet(nn.Module):
         return x
 
         
-    
+def resnet34(num_classes=1000, include_top=True):
+    return ResNet(BasicBlock, [3, 4, 6, 3], num_classes=num_classes, include_top=include_top)
+
+def resnet50(num_classes=1000, include_top=True):
+    return ResNet(BasicBlock, [3, 4, 6, 3], num_classes=num_classes, include_top=include_top)
+
+def resnet101(num_classes=1000, include_top=True):
+    return ResNet(BasicBlock, [3, 4, 23, 3], num_classes=num_classes, include_top=include_top)
+
+def resnext50_32x4d(num_classes=1000, include_top=True):
+    groups = 32
+    width_per_group = 4
+    return ResNet(Bottleneck, [3, 4, 6, 3],
+                  num_classes=num_classes,
+                  include_top=include_top,
+                  groups=groups,
+                  width_per_group=width_per_group)
+
+def resnext101_32x8d(num_classes=1000, include_top=True):
+    groups = 32
+    width_per_group = 8
+    return ResNet(Bottleneck, [3, 4, 23, 3],
+                  num_classes=num_classes,
+                  include_top=include_top,
+                  groups=groups,
+                  width_per_group=width_per_group)
+
 
 
 
