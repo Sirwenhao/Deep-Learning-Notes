@@ -183,7 +183,3 @@ def resnext101_32x8d(num_classes=1000, include_top=True):
                   groups=groups,
                   width_per_group=width_per_group)
 
-
-
-
-
