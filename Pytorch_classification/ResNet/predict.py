@@ -20,11 +20,13 @@ def main():
          transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
     
     # load image
-    img_path = 'data_set/tulip.jpg'
+    img_path = '/Users/WH/Desktop/Deep-Learning-for-image-processing/data_set/tulip.jpg'
     assert os.path.exists(img_path), "file: '{}' does not exist.".format(img_path)
     img = Image.open(img_path)
-    plt.show(img)
+    plt.imshow(img)
     # [N, C, H, W] N为batch_size,此处应该等于1
+    img = data_transform(img)
+    # expand batch dimension
     img = torch.unsqueeze(img, dim=0)
 
     # read class_indict
@@ -38,7 +40,7 @@ def main():
     model = resnet34(num_classes=5).to(device)
 
     # load model weights
-    weigths_path = "./ResNet34_retrain.pth"
+    weigths_path = "Pytorch_classification/ResNet/ResNet34_retrain.pth"
     assert os.path.exists(weigths_path), "file: '{}' does not exist.".format(weigths_path)
     model.load_state_dict(torch.load(weigths_path, map_location=device))
 
@@ -60,6 +62,3 @@ def main():
 if __name__ == '__main__':
     main()
     
-
-
-
