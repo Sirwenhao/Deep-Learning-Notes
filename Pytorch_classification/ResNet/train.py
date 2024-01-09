@@ -30,9 +30,10 @@ def main():
                                    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])}
 
 
-    data_root = os.path.abspath(os.path.join(os.getcwd(), "../.."))  # 获取数据存储的根路径
+    # data_root = os.path.abspath(os.path.join(os.getcwd(), "../.."))  # 获取数据存储的根路径
+    data_root = '/Users/WH/Desktop/pytorch_classification'
     print("current data path: {}".format(data_root))
-    image_path = os.path.join(data_root, "data_set", "flower_data")
+    image_path = os.path.join(data_root, "flower_data")
     assert os.path.exists(image_path), "{} path does not exists.".format(image_path)
     train_dataset = datasets.ImageFolder(root=os.path.join(image_path, "train"),
                                          transform=data_transform["train"])
@@ -100,7 +101,7 @@ def main():
             images, labels = data
             optimizer.zero_grad()
             logits = net(images.to(device))
-            loss = loss.function(logits, labels.to(device))
+            loss = loss_function(logits, labels.to(device))
             loss.backward()
             optimizer.step()
 
@@ -136,13 +137,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    
-
-
-
-
-
-
-
-
-
