@@ -20,13 +20,13 @@ def main():
     
     #load image
     # 给定需要进行批量测试的图像文件夹路径
-    imgs_root = ''
+    imgs_root = '/Users/WH/Desktop/Deep-Learning-for-image-processing/data_set/tulip.jpg'
     assert os.path.exists(imgs_root), f"file: '{imgs_root}' does not exist."
     # 读取指定文件夹下所有的jpg文件
     img_path_list = [os.path.join(imgs_root, i) for i in os.listdir(imgs_root) if i.endswith(".jpg")]
 
     # read class_dict
-    json_path = 'data_set/class_indices.json'
+    json_path = '/Users/WH/Desktop/Deep-Learning-for-image-processing/data_set/class_indices.json'
     assert os.path.exists(json_path), f"file: {json_path} does not exist."
 
 

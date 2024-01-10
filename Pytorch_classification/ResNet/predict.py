@@ -30,7 +30,7 @@ def main():
     img = torch.unsqueeze(img, dim=0)
 
     # read class_indict
-    json_path = 'data_set/class_indices.json'
+    json_path = '/Users/WH/Desktop/Deep-Learning-for-image-processing/data_set/class_indices.json'
     assert os.path.exists(json_path), "file: '{}' does not exist.".format(json_path)
 
     with open(json_path, "r") as f:
@@ -40,7 +40,7 @@ def main():
     model = resnet34(num_classes=5).to(device)
 
     # load model weights
-    weigths_path = "Pytorch_classification/ResNet/ResNet34_retrain.pth"
+    weigths_path = "/Users/WH/Desktop/Deep-Learning-for-image-processing/Pytorch_classification/ResNet/ResNet34_retrain.pth"
     assert os.path.exists(weigths_path), "file: '{}' does not exist.".format(weigths_path)
     model.load_state_dict(torch.load(weigths_path, map_location=device))
 
