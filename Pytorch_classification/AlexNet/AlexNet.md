@@ -8,7 +8,7 @@
 
 ### AlexNet网络的基本结构
 
-有关AlexNet网络结构细节，原博主(https://github.com/WZMIAOMIAO)已经讲解的非常详细，具体不在赘述
+有关AlexNet网络结构细节，原博主(https://github.com/WZMIAOMIAO)已经讲解的非常详细，具体不再赘述
 
 ### 使用AlexNet对花进行分类任务
 
