@@ -20,10 +20,11 @@ def main():
     
     #load image
     # 给定需要进行批量测试的图像文件夹路径
-    imgs_root = '/Users/WH/Desktop/Deep-Learning-for-image-processing/data_set/tulip.jpg'
+    imgs_root = '/Users/WH/Desktop/pytorch_classification/flower_imgs'
     assert os.path.exists(imgs_root), f"file: '{imgs_root}' does not exist."
     # 读取指定文件夹下所有的jpg文件
-    img_path_list = [os.path.join(imgs_root, i) for i in os.listdir(imgs_root) if i.endswith(".jpg")]
+    img_path_list = [os.path.join(imgs_root, i) for i in os.listdir(imgs_root) if i.endswith(".jpg") or i.endswith(".jpeg")]
+    # print("img_path_list", img_path_list)
 
     # read class_dict
     json_path = '/Users/WH/Desktop/Deep-Learning-for-image-processing/data_set/class_indices.json'
@@ -37,13 +38,13 @@ def main():
     model = resnet34(num_classes=5).to(device)
     
     # load model weights
-    weights_path = 'Pytorch_classification/ResNet/ResNet34_retrain.pth'
+    weights_path = '/Users/WH/Desktop/Deep-Learning-for-image-processing/Pytorch_classification/ResNet/ResNet34_retrain.pth'
     assert os.path.exists(weights_path), f"file: {weights_path} does not exits."
     model.load_state_dict(torch.load(weights_path, map_location=device))
 
     # prediction
     model.eval()
-    batch_size = 8 # 每次进行预测时打包的图片数量
+    batch_size = 6 # 每次进行预测时打包的图片数量,我这里只有5张图片。。。
     with torch.no_grad():
         for ids in range(0, len(img_path_list) // batch_size):
             img_list = []
