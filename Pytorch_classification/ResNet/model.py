@@ -112,7 +112,7 @@ class ResNet(nn.Module):
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal(m.weight, mode='fan_out', nonlinearity='relu')
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')   # pytorch新版本已经更新nn.init.kaiming_nomal为nn.kaiming_normal_
 
     def _make_layer(self, block, channel, block_num, stride=1):
         downsample = None
