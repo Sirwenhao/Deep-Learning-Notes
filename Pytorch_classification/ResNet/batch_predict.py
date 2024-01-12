@@ -43,8 +43,8 @@ def main():
     model.load_state_dict(torch.load(weights_path, map_location=device))
 
     # prediction
-    model.eval()
-    batch_size = 6 # 每次进行预测时打包的图片数量,我这里只有5张图片。。。
+    model.eval()  # model.eval()将模型设置为inference模式，1、关闭BN和Dropout的影响；2、关闭梯度计算 
+    batch_size = 6 # 每次进行预测时打包的图片数量
     with torch.no_grad():
         for ids in range(0, len(img_path_list) // batch_size):
             img_list = []
