@@ -1,5 +1,8 @@
 ## AlexNet
 
+- AlexNet原论文：https://proceedings.neurips.cc/paper_files/paper/2012/file/c399862d3b9d6b76c8436e924a68c45b-Paper.pdf
+
+
 ### 目录：
 
 - AlexNet网络的基本结构
