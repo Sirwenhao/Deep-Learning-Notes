@@ -1,5 +1,7 @@
 ## VGGNet
 
+- VGGNet对应论文：https://arxiv.org/pdf/1409.1556.pdf
+
 主要对应教程为：WZMIAOMIAO，对应训练任务为：花分类，五类别
 
 ### model.py
