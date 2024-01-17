@@ -117,7 +117,7 @@ def main():
         with torch.no_grad():
             val_bar = tqdm(validate_loader, file=sys.stdout)
             for val_data in val_bar:
-                val_images. val_labels = val_data
+                val_images, val_labels = val_data
                 outputs = net(val_images.to(device))
                 predict_y = torch.max(outputs, dim=1)[1]
                 acc += torch.eq(predict_y, val_labels.to(device)).sum().item()
