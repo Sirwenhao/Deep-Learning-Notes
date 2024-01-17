@@ -31,7 +31,7 @@ def main():
 
 
 
-    data_root = r'/Users/WH/Desktop/pytorch_classification/flower_data'  #dataset path
+    data_root = r'/Users/WH/Desktop/pytorch_classification'  #dataset path
     image_path = os.path.join(data_root, "flower_data")
     assert os.path.exists(image_path), "{} path does not exist.".format(image_path)
     train_dataset = datasets.ImageFolder(root=os.path.join(image_path, "train"),
@@ -49,7 +49,7 @@ def main():
     nw = min([os.cpu_count(), batch_size if batch_size > 1 else 0, 8]) # number of workers
     print(f"Using {nw} dataloader workers every process")
 
-    trian_loader = torch.utils.data.Dataloader(train_dataset,
+    train_loader = torch.utils.data.DataLoader(train_dataset,
                                                 batch_size=batch_size, shuffle=True,
                                                 num_workers=nw)
 
@@ -57,7 +57,7 @@ def main():
                                             transform=data_transform["val"])
     val_num = len(validate_dataset)
 
-    validate_loader = torch.utils.data.Dataloader(validate_dataset,
+    validate_loader = torch.utils.data.DataLoader(validate_dataset,
                                                 batch_size=batch_size, shuffle=True,
                                                 num_workers=nw)
     print(f"Using {train_num} images for trainning, using {val_num} for validation")
@@ -69,7 +69,7 @@ def main():
     # download url: https://download.pytorch.org/models/mobilenet_v2-b0353104.pth
     model_weight_path = r'/Users/WH/Desktop/pytorch_classification/mobilenet_v2.pth'
     assert os.path.exists(model_weight_path), f"file {model_weight_path} does not exist."
-    pre_weights = torch.load(model_v2, map_location='cpu')  # 返回值为一个字典元素，键是参数的名称、值是对应参数的张量
+    pre_weights = torch.load(model_weight_path, map_location='cpu')  # 返回值为一个字典元素，键是参数的名称、值是对应参数的张量
 
 
     # delete classifier weithts
@@ -92,7 +92,7 @@ def main():
 
     best_acc = 0.0
     save_path = './MobileNetv2_retrain.pth'
-    train_steps = len(trian_loader)
+    train_steps = len(train_loader)
     for epoch in range(epochs):
         # train
         net.train()
