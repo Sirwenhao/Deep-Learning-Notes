@@ -71,6 +71,7 @@ def main():
     assert os.path.exists(model_weight_path), f"file {model_weight_path} does not exist."
     pre_weights = torch.load(model_v2, map_location='cpu')  # 返回值为一个字典元素，键是参数的名称、值是对应参数的张量
 
+
     # delete classifier weithts
     # 下述代码使用了字典推导式, numel()是统计张量的元素数量
     pre_dict = {k:v for k,v in pre_weights.items() if net.state_dict()[k].numel() == v.numel()}
