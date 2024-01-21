@@ -43,9 +43,13 @@ def main():
     model.eval()
     with torch.no_grad():
         # predict class
+        print(model(img.to(device)))  # torch.Size([1, 5]) 1行5列, 对应的是5个类别每个类的预测结果
         output = torch.squeeze(model(img.to(device))).cpu()
+        # print(output) # torch.Size([5]) 
         predict = torch.softmax(output, dim=0)
+        print(predict) # tensor类型，对应的是将每个预测数值转换之后的概率
         predict_cla = torch.argmax(predict).numpy()
+        print(predict_cla) # 0，torch,argmax()的作用是找到预测结果最大值对应的索引
         
     print_res = "class: {} prob: {:.3f}".format(class_indict[str(predict_cla)],
                                                 predict[predict_cla].numpy())
