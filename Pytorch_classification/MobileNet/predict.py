@@ -18,7 +18,7 @@ def main():
          transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
     
     # load image
-    img_path = ".." # 待预测的图像路径
+    img_path = "/Users/WH/Desktop/pytorch_classification/flower_imgs/daisy.jpg" # 待预测的图像路径
     assert os.path.exists(img_path), "file: '{}' does not exist.".format(img_path)
     img = Image.open(img_path)
     plt.imshow(img)
@@ -29,7 +29,7 @@ def main():
     img = torch.unsqueeze(img, dim=0)
     
     # read class_indict
-    json_path = ''
+    json_path = '/Users/WH/Desktop/Deep-Learning-for-image-processing/Pytorch_classification/MobileNet/class_indices.json'
     assert os.path.exists(json_path), "file: '{}' does not exist.".format(json_path)
     
     with open(json_path, "r") as f:
@@ -38,7 +38,7 @@ def main():
     # create model
     model = MobileNetV2(num_classes=5).to(device)
     # load model weights
-    model_weight_path = ""
+    model_weight_path = "/Users/WH/Desktop/Deep-Learning-for-image-processing/Pytorch_classification/MobileNet/MobileNetv2_retrain.pth"
     model.load_state_dict(torch.load(model_weight_path, map_location=device))
     model.eval()
     with torch.no_grad():
@@ -47,8 +47,8 @@ def main():
         predict = torch.softmax(output, dim=0)
         predict_cla = torch.argmax(predict).numpy()
         
-    print_res = "class: {} prob: {:.3f}".format(clas_indict[str(predict_cla)],
-                                                predict[predict-cla].numpy())
+    print_res = "class: {} prob: {:.3f}".format(class_indict[str(predict_cla)],
+                                                predict[predict_cla].numpy())
     plt.title(print_res)
     for i in range(len(predict)):
         print("class: {:10} prob:{:.3f}".format(class_indict[str(i)],
