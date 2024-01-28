@@ -1,6 +1,8 @@
 ### MobileNet
 
-24/01/15. Author:WH
+24/01/15. author:WH
+
+《MobileNets: Efficient Convolutional Neural Networks for Mobile Vision Applications》
 
 MobileNet论文链接：https://arxiv.org/pdf/1704.04861.pdf
 
