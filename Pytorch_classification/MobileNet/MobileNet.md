@@ -29,3 +29,26 @@ and 1x1 convolution called a pointwise convolution
 ##### 关于standard convolution以及depthwise convolution、pointwise convolution的示意图
 
 ![image-20240115231846650](https://gitee.com/Sirwenhao/typora-illustration/raw/master/image-20240115231846650.png)
+
+##### 参数$\alpha$
+
+- The role of the width multiplier $\alpha$ is to thin a network uninformly at each layer
+
+- Usage: For a given layer and width multiplier $\alpha$, the number of input channels *M* becomes $\alpha M$ and the number of output channels *N* becomes $\alpha N$
+
+- 数值上的量级对比：The computational cost of a depthwise separable convolution with width multiplier $\alpha$  ($\alpha \in (0, 1]$)is:
+  $$
+  D_ {K}\cdot  D_ {K} \cdot \alpha M \cdot D_ {F} \cdot D_ {F} + \alpha M \cdot \alpha N  \cdot D_ {F}  \cdot  D_ {F}
+  $$
+
+参数$\rho$
+
+- The second hyper-parameter to reduce the computational cost of a neural network is a resolution multiplier $\rho$
+
+- Usage: We apply this s to the input image and the internal representation of every layer is subsequently reduced by the same multiplier
+
+- 数值上的量级对比：We can now express the computational cost for the core layers of our network as depthwise separable convolutions with width multiplier $\alpha$ and resolution multiplier $\rho$​：
+  $$
+    D_ {K}  \cdot  D_ {K}  \cdot \alpha  M  \cdot \rho D_ {F} \cdot \rho D_ {F} + \alpha M \cdot  \alpha  N  \cdot \rho D_ {F} \cdot \rho D_ {F}
+  $$
+  
