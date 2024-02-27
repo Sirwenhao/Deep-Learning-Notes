@@ -53,7 +53,9 @@ train_loader = torch.utils.data.DataLoader(train_dataset,
 dataiter = iter(train_loader)
 images, labels = dataiter.next()
 
-#create grid of images
+# create grid of images
+# make_grid()用于将一个包含多个图像张量的列表或一个四维的图像张量转换成一个包含所有图像的单一图像张量，以便于可视化
+# 即将多个图像合成一个网格显示
 img_grid = torchvision.utils.make_grid(images)
 print(type(img_grid))
 
