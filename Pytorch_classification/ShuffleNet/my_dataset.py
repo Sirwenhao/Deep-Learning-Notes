@@ -24,11 +24,11 @@ class MyDastaSet(Dataset):
             img = self.images_class[item]
             
         return img, label
-     
+    
     @staticmethod
     def collate_fn(batch):
         images, labels = tuple(zip(*batch))
         
         images = torch.stack(images, dim=0)
-        labels = torch.as_tensor(labels)     # torch.as_tensor()
+        labels = torch.as_tensor(labels)     # torch.as_tensor()创建张量，共享底层数据
         return images, labels
