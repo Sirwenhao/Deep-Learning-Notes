@@ -58,7 +58,7 @@ class InvertedResidual(nn.Module):
         )
     # @staticmethod是python中的一个装饰器，用于定义静态方法。静态方法属于类而非实例，因此定义时不需要self参数，同时使用不需要进行实例化
     @staticmethod
-    def depthwise_conv(input_c, output_c, kernel_s, stride, padding, bias):
+    def depthwise_conv(input_c, output_c, kernel_s, stride=1, padding=0, bias=False):
         return nn.Conv2d(in_channels=input_c, out_channels=output_c, kernel_size=kernel_s, stride=stride, padding=padding, bias=bias, groups=input_c)
 
     def forward(self, x):
@@ -103,7 +103,7 @@ class ShuffleNetV2(nn.Module):
             seq = [inverted_residual(input_channels, output_channels, 2)]
             for i in range(repeats - 1):
                 seq.append(inverted_residual(output_channels, output_channels, 1))
-                setattr(self, name, nn.Squential(*seq))
+                setattr(self, name, nn.Sequential(*seq))
                 input_channels = output_channels
                 
         output_channels = self._stage_out_channels[-1]
