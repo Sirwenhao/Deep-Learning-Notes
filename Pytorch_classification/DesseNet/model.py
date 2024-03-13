@@ -72,7 +72,8 @@ class _DenseBlock(nn.ModuleDict):
             new_features = layer(features)
             features.append(new_features)
         return torch.cat(features, 1)
-    
+class _Transition(nn.Sequential):
+    def __init__(self, input_c,):
             
         
     
