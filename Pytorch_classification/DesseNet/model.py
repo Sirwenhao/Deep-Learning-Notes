@@ -123,6 +123,99 @@ class DenseNet(nn.Module):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(m.weight)
-            elif isinstance(m, nn.BatchNorm2d)
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Linear):
+                nn.init.constant_(m.bias, 0)
+                
+    def forward(self, x):
+        features = self.features(x)
+        out = F.relu(features, inplace=True)
+        out = F.adaptive_avg_pool2d(out, (1, 1))
+        out = torch.flatten(out, 1)
+        out = self.classifier(out)
+        return out
+        
+def densenet121(**kwargs):
+    return DenseNet(growth_rate=32, block_config=(6, 12, 24, 16), num_init_features=64, **kwargs)
 
 
+def densenet169(**kwargs: Any) -> DenseNet:
+    # Top-1 error: 24.00%
+    # 'densenet169': 'https://download.pytorch.org/models/densenet169-b2777c0a.pth'
+    return DenseNet(growth_rate=32,
+                    block_config=(6, 12, 32, 32),
+                    num_init_features=64,
+                    **kwargs)
+
+
+def densenet201(**kwargs: Any) -> DenseNet:
+    # Top-1 error: 22.80%
+    # 'densenet201': 'https://download.pytorch.org/models/densenet201-c1103571.pth'
+    return DenseNet(growth_rate=32,
+                    block_config=(6, 12, 48, 32),
+                    num_init_features=64,
+                    **kwargs)
+    
+    
+def densenet161(**kwargs: Any) -> DenseNet:
+    # Top-1 error: 22.35%
+    # 'densenet161': 'https://download.pytorch.org/models/densenet161-8d451a50.pth'
+    return DenseNet(growth_rate=48,
+                    block_config=(6, 12, 36, 24),
+                    num_init_features=96,
+                    **kwargs)
+    
+    
+    
+def load_state_dict(model, weights_path):
+    # '.'s are no longer allowed in module names, but previous _DenseLayer
+    # has keys 'norm.1', 'relu.1', 'conv.1', 'norm.2', 'relu.2', 'conv.2'.
+    # They are also in the checkpoints in model_urls. This pattern is used
+    # to find such keys.
+    pattern = re.compile(r'^(.*denselayer\d+\.(?:norm|relu|conv))\.((?:[12])\.(?:weight|bias|running_mean|running_var))$')
+    """
+    此处的pattern语句是一个用于解析神经网络层参数的正则表达式:
+    1、'^'表示匹配字符串的开始
+    2、'(.*denselayer\d+\.(?:norm|relu|conv))'为匹配的对象
+        - '.*'表示匹配零个或者多个任意字符
+        - 'denselayer': 匹配文本"denselayer"
+        - '\d+': 匹配一个或者多个数字
+        - '\.': 匹配一个点字符
+        - '(?:norm|relu|conv)': 非捕获组，匹配 "norm"、"relu" 或 "conv" 中的一个
+        - 总结起来，这部分匹配了形如 "denselayerX.norm"、"denselayerX.relu" 或 "denselayerX.conv" 的子字符串，其中 X 是一个或多个数字
+    3、'\.((?:[12])\.(?:weight|bias|running_mean|running_var))'为匹配的对象
+        - '\.': 匹配一个点字符
+        - '((?:[12])\.(?:weight|bias|running_mean|running_var))'
+        - '(?:[12])'：非捕获组，匹配 "1" 或 "2" 中的一个
+        - '\.'：匹配一个点字符
+        - '(?:weight|bias|running_mean|running_var)'：非捕获组，匹配 "weight"、"bias"、"running_mean" 或 "running_var" 中的一个。
+        - 总结起来，这部分匹配了形如 ".1.weight"、".2.bias"、".1.running_mean" 或 ".2.running_var" 的子字符串
+    4、'$': 匹配字符串的结束
+    """
+    state_dict = torch.load(weights_path)
+    
+    num_classes = model.classifier.out_features
+    load_fc = num_classes == 1000
+    
+    for key in list(state_dict.keys()):
+        if load_fc is False:
+            if "classifier" in key:
+                del state_dict[key]
+                
+        res = pattern.match(key)
+        if res:
+            new_key = res.group(1) + res.group(2)
+            state_dict[new_key] = state_dict[key]
+            del state_dict[key]
+    model.load_state_dict(state_dict, strict=load_fc)
+    print("Successfully load pretrain-weights.")
+            
+            
+        
+    
+    
+    
+    
+    
