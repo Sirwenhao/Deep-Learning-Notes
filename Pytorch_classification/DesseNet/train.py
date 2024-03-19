@@ -60,4 +60,58 @@ def main(args):
     
     # 载入权重
     model = densenet121(num_classes=args.num_classes).to(device)
-
+    if args.weights != "":
+        if os.path.exists(args.weights):
+            load_state_dict(model, args.weigths)
+        else:
+            raise FileNotFoundError("not found weihts file: {}".format(args.weights))
+        
+    # 是否冻结权重
+    if args.freeze_layers:
+        for name, para in model.named_parameters:
+            # 冻结初最后的全链接层之外的所有层的参数
+            if "classifier" not in name:
+                para.requires_grad_(False)
+                
+    pg = [p for p in model.parameters() if p.requires_grad]
+    optimizer = optim.SGD(pg, lr=args.lr, momentum=0.9, weight_decay=1E-4, nesteroc=True)
+    # schedular https://arxiv.org/pdf/1812.01187.pdf
+    # 动态学习率
+    lf = lambda x: ((1+math.cos(x * math.pi / args.epochs)) / 2) * (1 - args.lrf) + args.lrf # cosine
+    scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lf)
+    
+    for epoch in range(args.epochs):
+        # train
+        mean_loss = train_one_epoch(model=model, optimizer=optimizer, data_loader=train_loader, device=device, epoch=epoch)
+        scheduler.step()
+        
+        # validate
+        acc = evaluate(model=model, data_loader=val_loader, device=device)
+        print("[epoch {}] accuracy:{}".format(epoch, round(acc, 3)))
+        tags = ["loss", "accuracy", "learning_rate"]
+        tb_writter.add_scalar(tags[0], mean_loss, epoch)
+        tb_writter.add_scalar(tags[1], acc, epoch)
+        tb_writter.add_scalar(tags[2], optimizer.param_groups[0]["lr"], epoch)
+        
+        torch.save(model.state_dict(), "./weights/model-{}.pth".format(epoch))
+        
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--num_classes', type=int, default=5)
+    parser.add_argument('--epochs', type=int, default=30)
+    parser.add_argument('--batch_size', type=int, default=16)
+    parser.add_argument('--lr', type=float, default=0.001)
+    parser.add_argument('--lrf', type=float, default=0.1)
+    
+    # dataset
+    parser.add_argument('--data-path', type=str, default="./data/flower_photos")
+    
+    # densenet121官方权重下载地址
+    # https://download.pytorch.org/models/densenet121-a639ec97.pth
+    parser.add_argument('--weights', type=str, default="densenet121.pth", help='initial weights path')
+    parser.add_argument('--freeze-layers', type=bool, default=False)
+    parser.add_argument('--device', default='cuda:0', help='device id (i.e. 0 oe 0,1 or cpu)')
+    
+    opt = parser.parse_args
+    main(opt)
+    
