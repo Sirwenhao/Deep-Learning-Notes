@@ -92,4 +92,61 @@ class SqueezeExcitation(nn.Module):
         self.ac1 = nn.SiLU()
         self.fc2 = nn.Conv2d(squeeze_c, expand_c, 1)
         self.ac2 = nn.Sigmoid()
+        
+    def forward(self, x:Tensor):
+        scale = F.adaptive_avg_pool2d(x, output_size=(1, 1))
+        scale = self.fc1(scale)
+        scale = self.ac1(scale)
+        scale = self.fc2(scale)
+        scale = self.ac2(scale)
+        return scale * x
+    
+class InvertedResidualConfig:
+    # kernel_size, in_channel, exp_ratio, strides, use_SE, drop_connect_rate
+    def __init__(self,
+                 kernel: int,
+                 input_c: int,
+                 out_c: int,
+                 expanded_ratio: int,
+                 stride: int,
+                 use_se: bool,
+                 drop_rate: float,
+                 index: str,
+                 width_coefficient: float):
+        self.input_c = self.adjust_channels(input_c, width_coefficient)
+        self.kernel = kernel
+        self.expanded_c =self.input_c * expanded_ratio
+        self.use_se = use_se
+        self.stride = stride
+        self.drop_rate = drop_rate
+        self.index = index
+        
+    @staticmethod
+    def adjust_channels(channels: int, width_coefficient: float):
+        return _make_divisible(channels * width_coefficient, 8)
+    
+    
+class InvertedResidual(nn.Module):
+    def __init__(self,
+                 cnf: InvertedResidualConfig,
+                 norm_layer: Callable[..., nn.Module]):
+        super(InvertedResidual, self).__init__()
+        
+        if cnf.stride not in [1, 2]:
+            raise ValueError("Illegal stride value.")
+        
+        self.use_res_connect = (cnf.stride == 1 and cnf.input_c == cnf.out_c)
+        
+        layers = OrderedDict()
+        activation_layer = nn.SiLU # alias swish
+        
+        # expand
+        if cnf.expanded_c != cnf.input_c:
+            layers.update({"expand_conv": ConvBNActivation(cnf.index,
+                                                           cnf.expanded_c,
+                                                           kernel_size=1,
+                                                           norm_layer=norm_layer,
+                                                           activation_layer=activation_layer)})
+        
+        
 
