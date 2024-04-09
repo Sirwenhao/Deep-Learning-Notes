@@ -147,6 +147,58 @@ class InvertedResidual(nn.Module):
                                                            kernel_size=1,
                                                            norm_layer=norm_layer,
                                                            activation_layer=activation_layer)})
+        # depthwise
+        layers.update({"dwconv": ConvBNActivation(cnf.expanded_c,
+                                                  cnf.expanded_c,
+                                                  kernel_size=cnf.kernel,
+                                                  stride=cnf.stride,
+                                                  groups=cnf.expanded_c,
+                                                  norm_layer=norm_layer,
+                                                  activation_layer=activation_layer)})
+        if cnf.use_se:
+            layers.update({"se": SqueezeExcitation(cnf.input_c,
+                                                   cnf.expanded_c)})
+            
+        # project
+        layers.update({"Project_conv": ConvBNActivation(cnf.expanded_c,
+                                                        cnf.out_c,
+                                                        kernel_size=1,
+                                                        norm_layer=norm_layer,
+                                                        activation_layer=activation_layer)})
         
+        self.block = nn.Sequential(layers)
+        self.out_channels = cnf.out_c
+        self.is_stride = cnf.stride > 1
         
-
+        # 只有在使用shortcut链接是才使用dropout层
+        if self.use_res_connect and cnf.drop_rate > 0:
+            self.dropout = DropPath(cnf.drop_rate)
+        else:
+            self.dropout = nn.Identity()
+            
+    def forward(self, x):
+        result = self.block(x)
+        result = self.dropout(result)
+        if self.use_res_connect:
+            result += x
+        return result
+        
+class EfficientNet(nn.Module):
+    def __init__(self,
+                width_coefficient: float,
+                depth_coefficient: float,
+                num_classes: int = 1000,
+                dropout_rate: float = 0.2,
+                drop_connect_rate: float = 0.2,
+                block: Optional[Callable[..., nn.Module]] = None,
+                norm_layer: Optional[Callable[..., nn.Module]] = None):
+        super(EfficientNet, self).__init__()
+        
+        # kernel_size, in_channel, out_channel, exp_ratio, strides, use_SE, drop_connect_rate, repeats
+        default_cnf = [[3, 32, 16, 1, 1, True, drop_connect_rate, 1],
+                       [3, 16, 24, 6, 2, True, drop_connect_rate, 2],
+                       [5, 24, 40, 6, 2, True, drop_connect_rate, 2],
+                       [3, 40, 80, 6, 2, True, drop_connect_rate, 3],
+                       [5, 80, 112, 6, 1, True, drop_connect_rate, 3],
+                       [5, 112, 192, 6, 2, True, drop_connect_rate, 4],
+                       [3, 192, 320, 6, 1, True, drop_connect_rate, 1]]
