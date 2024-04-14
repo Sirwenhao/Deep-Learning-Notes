@@ -8,6 +8,6 @@ EfficientNet论文链接：https://arxiv.org/pdf/1905.11946.pdf
 
 In this paper, we systematically balancing network depth, width, and resolution can lead to better performance. Proposed a new scaling method that uniformly scales all dimensions of depth/width/resolution using a simple yet highly effective compound coefficient.
 
-
+In this paper, neural architecture search is used to design a new baseline network and scale it up to obtain a family of models, called EfficientNets.
 
 
