@@ -49,6 +49,3 @@ if __name__ == '__main__':
     most_similar('you', word_to_id, id_to_word, C, top=5)
     
         
-    
-    
-    
