@@ -44,7 +44,7 @@ class ConfusionMatrix(object):
     def plot(self):
         matrix = self.matrix
         print(matrix)
-        plt.imshow(matrix, cmap=plt.cn.Blues)
+        plt.imshow(matrix, cmap=plt.cm.Blues)
         
         plt.xticks(range(self.num_classes), self.labels, rotation=45)
         plt.yticks(range(self.num_classes), self.labels)
@@ -82,7 +82,7 @@ if __name__ == '__main__':
     
     net = MobileNetV2(num_classes=5)
     # load model weigths
-    model_weight_path = '/Users/WH/Desktop/pytorch_classification/mobilenet_v2.pth'
+    model_weight_path = '/Users/WH/Desktop/Deep-Learning-for-image-processing/MobileNetv2_retrain.pth'
     assert os.path.exists(model_weight_path), "cannot find {} file".format(model_weight_path)
     net.load_state_dict(torch.load(model_weight_path, map_location=device))
     net.to(device)
