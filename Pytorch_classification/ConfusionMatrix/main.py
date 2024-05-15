@@ -26,9 +26,9 @@ class ConfusionMatrix(object):
         acc = sum_TP / np.sum(self.matrix)
         print("The model accuracy is ", acc)
         
-        # precision, recall, specificity
+        # precision, recall, specificity, f1
         table = PrettyTable()
-        table.field_names = ["", "Precision", "Recall", "Specificity"]
+        table.field_names = ["", "Precision", "Recall", "Specificity", "F1"]
         for i in range(self.num_classes):
             TP = self.matrix[i, i]
             #self.matrix[i, :]为矩阵matrix的行 
@@ -38,7 +38,8 @@ class ConfusionMatrix(object):
             Precision = round(TP / (TP+FP), 3) if TP+FP !=0 else 0.
             Recall = round(TP / (TP+FN), 3) if TP+FN != 0 else 0.
             Specificity = round(TN / (TN+FP), 3) if TN+FP != 0 else 0.
-            table.add_row([self.labels[i], Precision, Recall, Specificity])
+            F1 = 2 * Precision * Recall / (Precision + Recall) if Precision + Recall != 0 else 0
+            table.add_row([self.labels[i], Precision, Recall, Specificity, F1])
         print(table) 
             
     def plot(self):
