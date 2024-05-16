@@ -38,7 +38,7 @@ class ConfusionMatrix(object):
             Precision = round(TP / (TP+FP), 3) if TP+FP !=0 else 0.
             Recall = round(TP / (TP+FN), 3) if TP+FN != 0 else 0.
             Specificity = round(TN / (TN+FP), 3) if TN+FP != 0 else 0.
-            F1 = 2 * Precision * Recall / (Precision + Recall) if Precision + Recall != 0 else 0
+            F1 = round(2 * Precision * Recall / (Precision + Recall), 5) if Precision + Recall != 0 else 0
             table.add_row([self.labels[i], Precision, Recall, Specificity, F1])
         print(table) 
             
