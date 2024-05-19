@@ -155,4 +155,142 @@ class Bottlneck():
                                groups=out_c // group_width)
         
         if se_ratio > 0:
+            self.se = SqueezeExcitation(in_c, se_ratio)
+        else:
+            self.se = nn.Identity()
+            
+        self.conv3 = ConvBNAct(in_c=out_c, out_c=out_c, kernel_s=1, act=None)
+        self.ac3 = nn.ReLU(inplace=True)
+        
+        if drop_ratio > 0:
+            self.dropout = nn.Dropout(p=drop_ratio)
+        else:
+            self.dropout = nn.Identity()
+            
+        if (in_c != out_c) or (stride != 1):
+            self.downsample = ConvBNAct(in_c=in_c, out_c=out_c, kernel_s=1, stride=stride, act=None)
+        else:
+            self.downsample = nn.Identity()
+            
+    def zero_init_last_bn(self):
+        nn.init.zeros_(self.conv3.bn.weight)
+        
+    def forward(self):
+        shortcut = x
+        x = self.conv1(x)
+        x = self.conv2(x)
+        
+        x = self.se(x)
+        x = self.conv3(x)
+        
+        x = self.dropout(x)
+        
+        shortcut = self.downsample(shortcut)
+        
+        x += shortcut
+        x = self.ac3(x)
+        return x
+    
+class RegStage(nn.Moduel):
+    def __init__(self,
+                 in_c,
+                 out_c,
+                 depth,
+                 group_width,
+                 se_ratio):
+        super(RegStage, self).__init__()
+        for i in range(depth):
+            block_stride = 2 if i == 0 else 1
+            block_in_c = in_c if i == 0 else out_c
+            
+            name = "b{}".format(i + 1)
+            self.add_module(name,
+                            Bottlneck(in_c=block_in_c,
+                                      out_c=out_c,
+                                      stride=block_stride,
+                                      group_width=group_width,
+                                      se_ratio=se_ratio))
+            
+    def forward(self, x):
+        for block in self.children():
+            x = block(x)
+        return x
+    
+class RegNet(nn.Module):
+    """RegNet model.
+    Paper: https://arxiv.org/abs/2003.13678
+    Original Impl: https://github.com/facebookresearch/pycls/blob/master/pycls/models/regnet.py
+    and refer to: https://github.com/rwightman/pytorch-image-models/blob/master/timm/models/regnet.py
+    """
+
+    def __init__(self,
+                 cfg: dict,
+                 in_c: int = 3,
+                 num_classes: int = 1000,
+                 zero_init_last_bn: bool = True):
+        super(RegNet, self).__init__()
+
+        # RegStem
+        stem_c = cfg["stem_width"]
+        self.stem = ConvBNAct(in_c, out_c=stem_c, kernel_s=3, stride=2, padding=1)
+
+        # build stages
+        input_channels = stem_c
+        stage_info = self._build_stage_info(cfg)
+        for i, stage_args in enumerate(stage_info):
+            stage_name = "s{}".format(i + 1)
+            self.add_module(stage_name, RegStage(in_c=input_channels, **stage_args))
+            input_channels = stage_args["out_c"]
+
+        # RegHead
+        self.head = RegHead(in_unit=input_channels, out_unit=num_classes)
+
+        # initial weights
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_uniform_(m.weight, mode="fan_out",  nonlinearity='relu')
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.ones_(m.weight)
+                nn.init.zeros_(m.bias)
+            elif isinstance(m, nn.Linear):
+                nn.init.normal_(m.weight, mean=0.0, std=0.01)
+                nn.init.zeros_(m.bias)
+
+        if zero_init_last_bn:
+            for m in self.modules():
+                if hasattr(m, "zero_init_last_bn"):
+                    m.zero_init_last_bn()
+
+    def forward(self, x: Tensor) -> Tensor:
+        for layer in self.children():
+            x = layer(x)
+        return x
+
+    @staticmethod
+    def _build_stage_info(cfg: dict):
+        wa, w0, wm, d = cfg["wa"], cfg["w0"], cfg["wm"], cfg["depth"]
+        widths, num_stages = generate_width_depth(wa, w0, wm, d)
+
+        stage_widths, stage_depths = np.unique(widths, return_counts=True)
+        stage_groups = [cfg['group_w'] for _ in range(num_stages)]
+        stage_widths, stage_groups = adjust_width_groups_comp(stage_widths, stage_groups)
+
+        info = []
+        for i in range(num_stages):
+            info.append(dict(out_c=stage_widths[i],
+                             depth=stage_depths[i],
+                             group_width=stage_groups[i],
+                             se_ratio=cfg["se_ratio"]))
+
+        return info
+
+
+def create_regnet(model_name="RegNetX_200MF", num_classes=1000):
+    model_name = model_name.lower().replace("-", "_")
+    if model_name not in model_cfgs.keys():
+        print("support model name: \n{}".format("\n".join(model_cfgs.keys())))
+        raise KeyError("not support model name: {}".format(model_name))
+
+    model = RegNet(cfg=model_cfgs[model_name], num_classes=num_classes)
+    return model
         
