@@ -78,4 +78,81 @@ class ConvBNAct(nn.Module):
                  act = nn.ReLU(inplace=True)):
         super(ConvBNAct, self).__init__()
         
-
+        self.conv= nn.Conv2d(in_channels=in_c,
+                             out_channels=out_c,
+                             kernel_size=kernel_s,
+                             stride=stride,
+                             padding=padding,
+                             groups=groups,
+                             bias=False)
+        
+        self.bn = nn.BatchNorm2d(out_c)
+        self.act = act if act is not None else nn.Identity()
+        
+    def forward(self, x):
+        x = self.conv(x)
+        x = self.bn(x)
+        x = self.act(x)
+        return x
+        
+class RegHead(nn.Module):
+    def __init__(self,
+                 in_unit = 368,
+                 out_init = 1000,
+                 output_size = (1, 1),
+                 drop_ratio = 0.25):
+        super(RegHead, self).__init__()
+        self.pool == nn.AdaptiveAvgPool2d(output_size)
+        
+        if drop_ratio > 0:
+            self.dropout = nn.Dropout(p=drop_ratio)
+        else:
+            self.dropout = nn.Identity()
+            
+        self.fc = nn.Linear(in_features=in_unit, out_features=out_unit)
+        
+        
+    def forward(self, x):
+        x = self.pool(x)
+        x = torch.flatten(x, start_dim=1)
+        x = self.dropout(x)
+        x = self.fc(x)
+        return x
+    
+class SqueezeExcitation(nn.Module):
+    def __init__(self, input_c, expand_c, se_ratio = 0.25):
+        super(SqueezeExcitation, self).__init__()
+        squeeze_c = int(input_c, * se_ratio)
+        self.fc1 = nn.Conv2d(expand_c, squeeze_c, 1)
+        self.ac1 = nn.ReLU(inplace=True)
+        self.fc2 = nn.Conv2d(squeeze_c, expand_c, 1)
+        self.ac2 = nn.Sigmoid()
+        
+    def forward(self, x):
+        scale = x.mean((2, 3), keepdim=True)
+        scale = self.fc1(scale)
+        scale = self.ac1(scale)
+        scale = self.fc2(scale) 
+        scale = self.ac2(scale)
+        return scale * x
+    
+class Bottlneck():
+    def __init__(self,
+                 in_c,
+                 out_c,
+                 stride = 1,
+                 group_width = 1,
+                 se_ratio = 0.,
+                 drop_ratio = 0.):
+        super(Bottlneck, self).__init__()
+        
+        self.conv1 = ConvBNAct(in_c=in_c, out_c=out_c, kernel_s=1)
+        self.conv2 = ConvBNAct(in_c=out_c,
+                               out_c=out_c,
+                               kernel_s=3,
+                               stride=stride,
+                               padding=1,
+                               groups=out_c // group_width)
+        
+        if se_ratio > 0:
+        
