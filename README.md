@@ -1,5 +1,12 @@
-#### 深度学习图像处理篇学习
-基于PyTorch框架
-此Repo为个人学习总结，具体详细内容请见原Repo，链接如下
-- 教程：https://github.com/WZMIAOMIAO/deep-learning-for-image-processing
-- 视频：https://space.bilibili.com/18161609
+### Deep Learning Notes:
+
+#### Image Processing
+Based on PyTroch
+This repo is for personal summary. For more specific content, please refer to the original repo. links:
+- Tutorial：https://github.com/WZMIAOMIAO/deep-learning-for-image-processing
+- Video：https://space.bilibili.com/18161609
+
+#### NLP
+NER related
+
+
