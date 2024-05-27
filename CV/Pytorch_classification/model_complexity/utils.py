@@ -25,4 +25,32 @@ def pool2d_cx(cx, in_c, k, *, stride=1):
     cx["c"] = c
     return cx
 
-def 
+def norm2d_cx(cx, in_c, trainable=True):
+    """Accumulates complexity of norm2d into cx = (h, w, flops, params, acts)."""
+    c, params = cx["c"], cx["params"]
+    assert c == in_c
+    cx["params"] += 4 * c
+    cx["freeze"] += 2 * c  # moving_mean, variance
+    if trainable is False:
+        cx["freeze"] += 2 * c  # beta, gamma
+    return cx
+
+
+def gap2d_cx(cx):
+    """Accumulates complexity of gap2d into cx = (h, w, flops, params, acts)."""
+    cx["h"] = 1
+    cx["w"] = 1
+    return cx
+
+
+def linear_cx(cx, in_units, out_units, *, bias=False, trainable=True):
+    """Accumulates complexity of linear into cx = (h, w, flops, params, acts)."""
+    c = cx["c"]
+    assert c == in_units
+    cx["c"] = out_units
+    cx["flops"] += in_units * out_units + (out_units if bias else 0)
+    cx["params"] += in_units * out_units + (out_units if bias else 0)
+    cx["acts"] += out_units
+    if trainable is False:
+        cx["freeze"] += in_units * out_units + (out_units if bias else 0)
+    return cx
