@@ -6,89 +6,110 @@ import torch.nn as nn
 import torch
 from torch import Tensor
 
-from utils import conv2d_cx, norm2d_cx, gap2d_cx, linear_cx
+from utils import *
 
-def drop_path(x, drop_prob=0., training=False):
-    if drop_path == 0. or not training:
+
+def drop_path(x, drop_prob: float = 0., training: bool = False):
+    """
+    Drop paths (Stochastic Depth) per sample (when applied in main path of residual blocks).
+    "Deep Networks with Stochastic Depth", https://arxiv.org/pdf/1603.09382.pdf
+
+    This function is taken from the rwightman.
+    It can be seen here:
+    https://github.com/rwightman/pytorch-image-models/blob/master/timm/models/layers/drop.py#L140
+    """
+    if drop_prob == 0. or not training:
         return x
     keep_prob = 1 - drop_prob
-    shape = (x.shape[0],) + (1,) * (x.ndim - 1)
+    shape = (x.shape[0],) + (1,) * (x.ndim - 1)  # work with diff dim tensors, not just 2D ConvNets
     random_tensor = keep_prob + torch.rand(shape, dtype=x.dtype, device=x.device)
-    random_tensor.floor_()
+    random_tensor.floor_()  # binarize
     output = x.div(keep_prob) * random_tensor
     return output
 
+
 class DropPath(nn.Module):
+    """
+    Drop paths (Stochastic Depth) per sample  (when applied in main path of residual blocks).
+    "Deep Networks with Stochastic Depth", https://arxiv.org/pdf/1603.09382.pdf
+    """
     def __init__(self, drop_prob=None):
         super(DropPath, self).__init__()
         self.drop_prob = drop_prob
-        
+
     def forward(self, x):
         return drop_path(x, self.drop_prob, self.training)
-    
+
+
 class ConvBNAct(nn.Module):
     def __init__(self,
-                 in_planes,
-                 out_planes,
-                 kernel_size = 3,
-                 stride = 1,
-                 groups = 1,
-                 norm_layer=None,
-                 activation_layer=None):
+                 in_planes: int,
+                 out_planes: int,
+                 kernel_size: int = 3,
+                 stride: int = 1,
+                 groups: int = 1,
+                 norm_layer: Optional[Callable[..., nn.Module]] = None,
+                 activation_layer: Optional[Callable[..., nn.Module]] = None):
         super(ConvBNAct, self).__init__()
-        
+
         padding = (kernel_size - 1) // 2
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
         if activation_layer is None:
-            activation_layer = nn.SiLU # alias Swish
-            
+            activation_layer = nn.SiLU  # alias Swish  (torch>=1.7)
+
         self.conv = nn.Conv2d(in_channels=in_planes,
-                              out_planes=out_planes,
+                              out_channels=out_planes,
                               kernel_size=kernel_size,
                               stride=stride,
                               padding=padding,
                               groups=groups,
                               bias=False)
+
         self.bn = norm_layer(out_planes)
         self.act = activation_layer()
-        
+
     def forward(self, x):
         result = self.conv(x)
         result = self.bn(result)
         result = self.act(result)
+
         return result
-            
-    def complexity(self, x):
+
+    def complexity(self, cx):
         cx = conv2d_cx(cx,
                        in_c=self.conv.in_channels,
                        out_c=self.conv.out_channels,
-                       k=self.conv.kernel_size[0],
-                       stride=self.conv.stride[0],
+                       k=self.conv.kernel_size[0],  # tuple type
+                       stride=self.conv.stride[0],  # tuple type
                        groups=self.conv.groups,
                        bias=False,
                        trainable=self.conv.weight.requires_grad)
         cx = norm2d_cx(cx, self.conv.out_channels, trainable=self.bn.weight.requires_grad)
-        
+
         return cx
-            
+
+
 class SqueezeExcite(nn.Module):
-    def __init__(self, input_c, expand_c, se_ratio=0.25):
+    def __init__(self,
+                 input_c: int,   # block input channel
+                 expand_c: int,  # block expand channel
+                 se_ratio: float = 0.25):
         super(SqueezeExcite, self).__init__()
         squeeze_c = int(input_c * se_ratio)
         self.conv_reduce = nn.Conv2d(expand_c, squeeze_c, 1)
-        self.act1 = nn.SiLU()
+        self.act1 = nn.SiLU()  # alias Swish
         self.conv_expand = nn.Conv2d(squeeze_c, expand_c, 1)
         self.act2 = nn.Sigmoid()
-        
-    def forward(self, x):
+
+    def forward(self, x: Tensor) -> Tensor:
         scale = x.mean((2, 3), keepdim=True)
         scale = self.conv_reduce(scale)
         scale = self.act1(scale)
-        scale = self.conv_reduce(scale)
+        scale = self.conv_expand(scale)
         scale = self.act2(scale)
         return scale * x
-    
+
     def complexity(self, cx):
         h, w = cx["h"], cx["w"]
         cx = gap2d_cx(cx)
@@ -97,61 +118,85 @@ class SqueezeExcite(nn.Module):
                        out_c=self.conv_reduce.out_channels,
                        k=1,
                        bias=True,
+                       trainable=self.conv_reduce.weight.requires_grad)
+        cx = conv2d_cx(cx,
+                       in_c=self.conv_expand.in_channels,
+                       out_c=self.conv_expand.out_channels,
+                       k=1,
+                       bias=True,
                        trainable=self.conv_expand.weight.requires_grad)
         cx["h"], cx["w"] = h, w
-        
+
+        return cx
+
+
 class MBConv(nn.Module):
-    def __init__(self, 
-                 kernel_size,
-                 input_c,
-                 out_c,
-                 expand_ratio,
-                 stride,
-                 se_ratio,
-                 drop_rate,
-                 norm_layer):
+    def __init__(self,
+                 kernel_size: int,
+                 input_c: int,
+                 out_c: int,
+                 expand_ratio: int,
+                 stride: int,
+                 se_ratio: float,
+                 drop_rate: float,
+                 norm_layer: Callable[..., nn.Module]):
         super(MBConv, self).__init__()
-        
+
         if stride not in [1, 2]:
             raise ValueError("illegal stride value.")
-        
+
         self.has_shortcut = (stride == 1 and input_c == out_c)
-        activation_layer = nn.SiLU
+
+        activation_layer = nn.SiLU  # alias Swish
         expanded_c = input_c * expand_ratio
-        
+
+        # 在EfficientNetV2中，MBConv中不存在expansion=1的情况所以conv_pw肯定存在
         assert expand_ratio != 1
-        
+        # Point-wise expansion
         self.expand_conv = ConvBNAct(input_c,
                                      expanded_c,
                                      kernel_size=1,
                                      norm_layer=norm_layer,
                                      activation_layer=activation_layer)
-        
+
         # Depth-wise convolution
-        self.dwconv = ConvBNAct(expanded_c, expanded_c, kernel_size=kernel_size, stride=stride, groups=expanded_c, norm_layer=activation_layer)
-        
+        self.dwconv = ConvBNAct(expanded_c,
+                                expanded_c,
+                                kernel_size=kernel_size,
+                                stride=stride,
+                                groups=expanded_c,
+                                norm_layer=norm_layer,
+                                activation_layer=activation_layer)
+
         self.se = SqueezeExcite(input_c, expanded_c, se_ratio) if se_ratio > 0 else nn.Identity()
-        
+
         # Point-wise linear projection
-        self.project_conv = ConvBNAct(expanded_c, out_planes=out_c, kernel_size=1, norm_layer=norm_layer, activation_layer=nn.Identity)
-        
+        self.project_conv = ConvBNAct(expanded_c,
+                                      out_planes=out_c,
+                                      kernel_size=1,
+                                      norm_layer=norm_layer,
+                                      activation_layer=nn.Identity)  # 注意这里没有激活函数，所有传入Identity
+
         self.out_channels = out_c
-        
+
+        # 只有在使用shortcut连接时才使用dropout层
         self.drop_rate = drop_rate
         if self.has_shortcut and drop_rate > 0:
             self.dropout = DropPath(drop_rate)
-        
-    def forward(self, x):
+
+    def forward(self, x: Tensor) -> Tensor:
         result = self.expand_conv(x)
         result = self.dwconv(result)
         result = self.se(result)
         result = self.project_conv(result)
-        
+
         if self.has_shortcut:
             if self.drop_rate > 0:
                 result = self.dropout(result)
             result += x
-            
+
+        return result
+
     def complexity(self, cx):
         cx = self.expand_conv.complexity(cx)
         cx = self.dwconv.complexity(cx)
@@ -159,7 +204,8 @@ class MBConv(nn.Module):
         cx = self.project_conv.complexity(cx)
 
         return cx
-    
+
+
 class FusedMBConv(nn.Module):
     def __init__(self,
                  kernel_size: int,
@@ -403,6 +449,4 @@ def efficientnetv2_l(num_classes: int = 1000):
     model = EfficientNetV2(model_cnf=model_config,
                            num_classes=num_classes,
                            dropout_rate=0.4)
-    return model    
-    
-    
+    return model
