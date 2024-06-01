@@ -17,8 +17,10 @@ class PositionalEncoding(nn.Module):
         div_term = torch.exp(dim_pair * (-math.log(10000.0) / dim_embed))
         
         pe = torch.zeros(max_positions, dim_embed)
-        pe[:, 0::2] = torch.sin(position * div_term)
-        pe[:, 1::2] = torch.cos(position * div_term)
+        pe[:, 0::2] = torch.sin(position * div_term) # 取出偶数位元素
+        # print('pe[:, 0::2]:', pe[:, 0::2][0])
+        # print('pe[:, 0::2].shape:', pe[:, 0::2].shape)  # torch.Size([100, 256])
+        pe[:, 1::2] = torch.cos(position * div_term) # 取出奇数位元素
         
         # 扩充batch维度
         pe = pe.unsqueeze(0)
@@ -42,4 +44,4 @@ if __name__ == "__main__":
     embed_size = 512
     drop_prob = 0.5
     PE = PositionalEncoding(max_len, embed_size, drop_prob)
-    print(PE)
+    # print(PE)
