@@ -51,7 +51,7 @@ if __name__ == "__main__":
     embed_size = 512
     max_len = 100
     
-    # 实力化
+    # 实例化
     embedding_layer = TransformerEmbedding(vocab_size, embed_size, max_len)
     
     # 示例输入
