@@ -6,7 +6,7 @@ import math
 import argparse
 import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
-from torch.utils.tensorboard import summaryWriter
+from torch.utils.tensorboard import SummaryWriter
 from torchvision import transforms
 
 from my_dataset import MyDataset
@@ -19,7 +19,7 @@ def main(args):
     if os.path.exists("./weights") is False:
         os.makedirs("./weights")
         
-    tb_writer = summaryWriter()
+    tb_writer = SummaryWriter()
     
     train_images_path, train_images_label, val_images_path, val_images_label = read_split_data(args.data_path)
     
