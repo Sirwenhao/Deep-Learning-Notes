@@ -53,6 +53,7 @@ random.seed(opt.manualSeed)
 np.random.seed(opt.manualSeed)
 torch.manual_seed(opt.manualSeed)
 
+# 主要用于控制cuDNN的卷积算法选择
 cudnn.benchmark = True
 
 if torch.cuda.is_available() and not opt.cuda:
@@ -116,9 +117,9 @@ loss_avg = utils.averager()
 
 # setup optimizer
 if opt.addm:
-    optimizer = optim.Adam(CRNN.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
+    optimizer = optim.Adam(crnn.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
 elif opt.adadelta:
-    optimizer = optim.Adadelta(CRNN.parameters())
+    optimizer = optim.Adadelta(crnn.parameters())
 else:
     optimizer = optim.RMSprop(crnn.parameters(), lr=opt.lr)
     
@@ -126,7 +127,7 @@ else:
 def val(net, dataset, criterion, max_iter=100):
     print('Start Val')
     
-    for p in CRNN.parameters():
+    for p in crnn.parameters():
         p.requires_grad = False
         
     net.eval()
@@ -149,7 +150,7 @@ def val(net, dataset, criterion, max_iter=100):
         utils.loadData(text, t)
         utils.loadData(length, l)
         
-        preds = CRNN(image)
+        preds = crnn(image)
         preds_size = Variable(torch.IntTensor([preds.size(0)] * batch_size))
         cost = criterion(preds, text, preds_size.data, raw=False)
         loss_avg.add(cost)
@@ -178,10 +179,10 @@ def trainBatch(net, ctiterion, optimizer):
     utils.loadData(text, t)
     utils.loadData(length, l)
     
-    preds = CRNN(image)
+    preds = crnn(image)
     preds_size = Variable(torch.IntTensor([preds.size(0)] * batch_size))
     cost = criterion(preds, text, preds_size, length) / batch_size
-    CRNN.zero_grad()
+    crnn.zero_grad()
     cost.backward()
     optimizer.step()
     return cost
@@ -190,11 +191,11 @@ for epoch in range(opt.nepoch):
     train_iter = iter(train_loader)
     i = 0
     while i < len(train_loader):
-        for p in CRNN.parameters():
+        for p in crnn.parameters():
             p.requires_grad = True
-        CRNN.train()
+        crnn.train()
         
-        cost = trainBatch(CRNN, criterion, optimizer)
+        cost = trainBatch(crnn, criterion, optimizer)
         loss_avg.add(cost)
         i += 1
         
@@ -203,9 +204,9 @@ for epoch in range(opt.nepoch):
             loss_avg.reset()
             
         if i % opt.valInterval == 0:
-            val(CRNN, test_dataset, criterion)
+            val(crnn, test_dataset, criterion)
             
         # do checkpointing
         if i % opt.saveInterval == 0:
-            torch.save(CRNN.state_dict(), '{0}/netCRNN_{1}_{2}.pth'.format(opt.expr_dir, epoch, i))
+            torch.save(crnn.state_dict(), '{0}/netCRNN_{1}_{2}.pth'.format(opt.expr_dir, epoch, i))
             
