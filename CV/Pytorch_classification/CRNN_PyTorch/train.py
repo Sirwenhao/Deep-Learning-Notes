@@ -77,6 +77,145 @@ test_dataset = dataset.lmdbDastaset(
 nclass = len(opt.alphabet) + 1
 nc = 1
 
+converter = utils.strLabelConverter(opt.alphabet)
+criterion = CTCLoss()
+
+# custom weights initialization called on crnn
+def weights_init(m):
+    classname = m.__class__.__name__
+    if classname.find('Conv') != -1:
+        m.weights.data.normal_(0.0, 0.02)
+    elif classname.find('BatchNorm') != -1:
+        m.weight.data.normal_(1.0, 0.02)
+        m.bias.data.fill_(0)
+        
+crnn = CRNN.CRNN(opt.imgH, nc, nclass, opt.nh)
+crnn.apply(weights_init)
+if opt.pretrained != '':
+    print('loading pretrained model from %s' % opt.pretrained)
+    crnn.load_state_dict(torch.load(opt.pretrained))
+print(crnn)
+
+image = torch.FloatTensor(opt.batchSize, 3, opt.imgH, opt.imgH)
+text = torch.IntTensor(opt.batchSize * 5)
+length = torch.IntTensot(opt.batchSize)
+
+if opt.cuda:
+    crnn.cuda()
+    crnn = torch.nn.DataParallel(crnn, device_ids=range(opt.ngpu))
+    image = image.cuda()
+    criterion = criterion.cuda()
+    
+    
+image = Variable(image)
+text = Variable(text)
+length = Variable(length)
+
+# loss averager
+loss_avg = utils.averager()
+
+# setup optimizer
+if opt.addm:
+    optimizer = optim.Adam(CRNN.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
+elif opt.adadelta:
+    optimizer = optim.Adadelta(CRNN.parameters())
+else:
+    optimizer = optim.RMSprop(crnn.parameters(), lr=opt.lr)
+    
+    
+def val(net, dataset, criterion, max_iter=100):
+    print('Start Val')
+    
+    for p in CRNN.parameters():
+        p.requires_grad = False
+        
+    net.eval()
+    data_loader = torch.utils.data.DataLoader(
+        dataset, shuffle=True, batch_size=opt.batchSize, num_workers=int(opt.workers))
+    val_iter = iter(data_loader)
+    
+    i = 0
+    n_correct = 0
+    loss_avg = utils.averager()
+    
+    max_iter = min(max_iter, len(data_loader))
+    for i in range(max_iter):
+        data = val_iter.next()
+        i += 1
+        cpu_images, cpu_texts = data
+        batch_size = cpu_images.size(0)
+        utils.loadData(image, cpu_images)
+        t, l = converter.encode(cpu_texts)
+        utils.loadData(text, t)
+        utils.loadData(length, l)
+        
+        preds = CRNN(image)
+        preds_size = Variable(torch.IntTensor([preds.size(0)] * batch_size))
+        cost = criterion(preds, text, preds_size.data, raw=False)
+        loss_avg.add(cost)
+        
+        _, preds = preds.max(2)
+        preds = preds.squeeze(2)
+        preds = preds.transpose(1, 0).contiguous().view(-1)
+        sim_preds = converter.decode(preds.data, preds_size.data, raw=False)
+        for pred, target in zip(sim_preds, cpu_texts):
+            if pred == target.lower():
+                n_correct += 1
+                
+    raw_preds = converter.decode(preds.data, preds_size.data, raw=True)[:opt.n_test_disp]
+    for raw_pred, pred, gt in zip(raw_preds, sim_preds, cpu_texts):
+        print('%-20s => %-20s, gt: %-20s' % (raw_pred, pred, gt))
+        
+    accuracy = n_correct / float(max_iter * opt.batchSize)
+    print('Test loss: %f, accuracy: %f' %(loss_avg.val(), accuracy))
+    
+def trainBatch(net, ctiterion, optimizer):
+    data = train_iter.next()
+    cpu_images, cpu_texts = data
+    batch_size = cpu_images.size(0)
+    utils.loadData(image, cpu_images)
+    t, l = converter.encode(cpu_texts)
+    utils.loadData(text, t)
+    utils.loadData(length, l)
+    
+    preds = CRNN(image)
+    preds_size = Variable(torch.IntTensor([preds.size(0)] * batch_size))
+    cost = criterion(preds, text, preds_size, length) / batch_size
+    CRNN.zero_grad()
+    cost.backward()
+    optimizer.step()
+    return cost
+
+for epoch in range(opt.nepoch):
+    train_iter = iter(train_loader)
+    i = 0
+    while i < len(train_loader):
+        for p in CRNN.parameters():
+            p.requires_grad = True
+        CRNN.train()
+        
+        cost = trainBatch(CRNN, criterion, optimizer)
+        loss_avg.add(cost)
+        i += 1
+        
+        if i % opt.displayInterval == 0:
+            print('[%d/%d][%d/%d] Loss: %f' %(epoch, opt.nepoch, i, len(train_loader), loss_avg.val()))
+            loss_avg.reset()
+            
+        if i % opt.valInterval == 0:
+            val(CRNN, test_dataset, criterion)
+            
+        # do checkpointing
+        if i % opt.saveInterval == 0:
+            torch.save(CRNN.state_dict(), '{0}/netCRNN_{1}_{2}.pth'.format(opt.expr_dir, epoch, i))
+            
+    
+        
+    
+    
+
+
+
 
 
         
