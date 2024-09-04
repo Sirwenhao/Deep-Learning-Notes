@@ -209,21 +209,3 @@ for epoch in range(opt.nepoch):
         if i % opt.saveInterval == 0:
             torch.save(CRNN.state_dict(), '{0}/netCRNN_{1}_{2}.pth'.format(opt.expr_dir, epoch, i))
             
-    
-        
-    
-    
-
-
-
-
-
-        
-        
-        
-
-
-
-
-
-
